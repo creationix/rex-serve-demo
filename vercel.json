@@ -1,12 +1,11 @@
 {
-  "buildCommand": "",
   "installCommand": "",
   "framework": null,
   "functions": {
     "api/rex.rs": {
       "runtime": "vercel-rust@4.0.11",
       "maxDuration": 30,
-      "includeFiles": "routes/**,rex-serve.toml,rex-serve.rexd"
+      "includeFiles": "../routes/**,../rex-serve.toml,../rex-serve.rexd"
     }
   },
   "rewrites": [
