@@ -10,9 +10,16 @@ fn get_state() -> Arc<rex_serve::state::AppState> {
     STATE.get_or_init(|| {
         tracing_subscriber::fmt::init();
 
-        // On Vercel, the working directory contains the deployed files
+        // On Vercel, function files are in /var/task
         let project_root = std::env::current_dir()
             .expect("cannot determine working directory");
+
+        eprintln!("rex-serve init: project_root={}", project_root.display());
+        if let Ok(entries) = std::fs::read_dir(&project_root) {
+            for entry in entries.flatten() {
+                eprintln!("  {}", entry.path().display());
+            }
+        }
 
         let config = rex_serve::config::Config::load(&project_root);
 
