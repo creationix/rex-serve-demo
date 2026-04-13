@@ -14,25 +14,33 @@ fn get_state() -> Arc<rex_serve::state::AppState> {
         let project_root = std::env::current_dir()
             .expect("cannot determine working directory");
 
-        // Log cwd and directory listing in one shot
-        let mut listing = format!("rex-serve init: cwd={}", project_root.display());
-        for dir in &[project_root.as_path(), std::path::Path::new("/var/task")] {
-            listing.push_str(&format!(" | {}:", dir.display()));
-            if let Ok(entries) = std::fs::read_dir(dir) {
+        // Debug: dump filesystem to find where files are
+        fn list_recursive(path: &std::path::Path, depth: usize) -> String {
+            let mut out = String::new();
+            if let Ok(entries) = std::fs::read_dir(path) {
                 for entry in entries.flatten() {
                     let p = entry.path();
+                    let indent = "  ".repeat(depth);
                     let name = p.file_name().unwrap_or_default().to_string_lossy();
-                    let suffix = if p.is_dir() { "/" } else { "" };
-                    listing.push_str(&format!(" {}{}", name, suffix));
+                    if p.is_dir() {
+                        out.push_str(&format!("{indent}{name}/\n"));
+                        if depth < 2 { out.push_str(&list_recursive(&p, depth + 1)); }
+                    } else {
+                        out.push_str(&format!("{indent}{name}\n"));
+                    }
                 }
             }
+            out
         }
-        eprintln!("{listing}");
+        let tree = list_recursive(&project_root, 0);
+        eprintln!("FILES at {}:\n{tree}", project_root.display());
 
         let config = rex_serve::config::Config::load(&project_root);
 
-        rex_serve::state::AppState::build(config, project_root)
-            .expect("failed to initialize rex-serve state")
+        match rex_serve::state::AppState::build(config, project_root) {
+            Ok(state) => state,
+            Err(e) => panic!("init failed: {e}\nFiles:\n{tree}"),
+        }
     }).clone()
 }
 
