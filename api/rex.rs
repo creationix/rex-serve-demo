@@ -14,10 +14,16 @@ fn get_state() -> Arc<rex_serve::state::AppState> {
         let project_root = std::env::current_dir()
             .expect("cannot determine working directory");
 
-        eprintln!("rex-serve init: project_root={}", project_root.display());
-        if let Ok(entries) = std::fs::read_dir(&project_root) {
-            for entry in entries.flatten() {
-                eprintln!("  {}", entry.path().display());
+        eprintln!("rex-serve init: cwd={}", project_root.display());
+        // List files at cwd and /var/task to find where routes end up
+        for dir in &[project_root.as_path(), std::path::Path::new("/var/task")] {
+            eprintln!("  listing {}:", dir.display());
+            if let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let p = entry.path();
+                    let suffix = if p.is_dir() { "/" } else { "" };
+                    eprintln!("    {}{}", p.display(), suffix);
+                }
             }
         }
 
