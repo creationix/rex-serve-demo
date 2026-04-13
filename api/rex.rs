@@ -1,20 +1,19 @@
 use std::sync::{Arc, OnceLock};
-use axum::Router;
+use axum::{Router, routing::get, response::IntoResponse};
 use tower::ServiceBuilder;
 use vercel_runtime::Error;
 use vercel_runtime::axum::VercelLayer;
 
 static STATE: OnceLock<Arc<rex_serve::state::AppState>> = OnceLock::new();
+static INIT_LOG: OnceLock<String> = OnceLock::new();
 
 fn get_state() -> Arc<rex_serve::state::AppState> {
     STATE.get_or_init(|| {
         tracing_subscriber::fmt::init();
 
-        // On Vercel, function files are in /var/task
         let project_root = std::env::current_dir()
             .expect("cannot determine working directory");
 
-        // Debug: dump filesystem to find where files are
         fn list_recursive(path: &std::path::Path, depth: usize) -> String {
             let mut out = String::new();
             if let Ok(entries) = std::fs::read_dir(path) {
@@ -24,7 +23,7 @@ fn get_state() -> Arc<rex_serve::state::AppState> {
                     let name = p.file_name().unwrap_or_default().to_string_lossy();
                     if p.is_dir() {
                         out.push_str(&format!("{indent}{name}/\n"));
-                        if depth < 2 { out.push_str(&list_recursive(&p, depth + 1)); }
+                        if depth < 3 { out.push_str(&list_recursive(&p, depth + 1)); }
                     } else {
                         out.push_str(&format!("{indent}{name}\n"));
                     }
@@ -33,7 +32,7 @@ fn get_state() -> Arc<rex_serve::state::AppState> {
             out
         }
         let tree = list_recursive(&project_root, 0);
-        eprintln!("FILES at {}:\n{tree}", project_root.display());
+        INIT_LOG.get_or_init(|| format!("cwd: {}\n\n{tree}", project_root.display()));
 
         let config = rex_serve::config::Config::load(&project_root);
 
@@ -44,11 +43,17 @@ fn get_state() -> Arc<rex_serve::state::AppState> {
     }).clone()
 }
 
+async fn debug_handler() -> impl IntoResponse {
+    let log = INIT_LOG.get().map(|s| s.as_str()).unwrap_or("not initialized");
+    ([("content-type", "text/plain")], log.to_string())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let state = get_state();
 
     let router = Router::new()
+        .route("/__debug", get(debug_handler))
         .fallback(rex_serve::handler::handle_request)
         .with_state(state);
 
