@@ -1,0 +1,3 @@
+[submodule "rex"]
+	path = rex
+	url = git@github.com:creationix/rex.git

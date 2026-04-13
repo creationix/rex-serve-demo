@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} — rex-serve tour</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a class="logo" href="/">rex-serve</a>
+      <nav>
+        <a href="/tour/static-files">Static</a>
+        <a href="/tour/routing">Routing</a>
+        <a href="/tour/middleware">Middleware</a>
+        <a href="/tour/templates">Templates</a>
+        <a href="/tour/api">API</a>
+        <a href="/tour/experience">DX Report</a>
+        <a href="/tour/cursors">Cursors</a>
+        <a href="/tour/deseret">𐐔𐐯𐑅𐐨𐑉𐐯𐐻</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    {{{body}}}
+  </main>
+  <footer>
+    <div class="container">{{{footer}}}</div>
+  </footer>
+  <script>document.querySelectorAll('pre').forEach(p=>{p.style.position='relative';const b=document.createElement('button');b.className='copy-btn';b.textContent='copy';p.appendChild(b);b.onclick=e=>{e.stopPropagation();const t=document.createElement('textarea');t.value=p.textContent.replace(/copy$/,'').trim();t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);b.textContent='copied!';setTimeout(()=>b.textContent='copy',1500)}});(function(){var w,t;function c(){w=new WebSocket('ws://'+location.host+'/__reload');w.onmessage=function(e){console.log('[rex-serve] changed:',e.data);location.reload()};w.onclose=function(){t=setTimeout(c,1000)};w.onerror=function(){w.close()}}c()})()
+  </script>
+</body>
+</html>
