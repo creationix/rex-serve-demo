@@ -13,7 +13,7 @@ This is the knowledge-base example from the Rex project, deployed as a Vercel se
 - **External API proxying** — `http.fetch` calls the Deseret Alphabet translator API
 - **Unicode support** — Deseret script characters (U+10400–U+1044F, 4-byte UTF-8)
 - **Type checking** — all routes are type-checked at build time via `.rexd` domain schema
-- **WebSockets** — `/__ws/{channel}` pub/sub with optional `_ws/{channel}.rex` transforms (the live cursors demo at `/tour/cursors`), working on Vercel via a forked runtime — see below
+- **WebSockets** — `/__ws/{channel}` pub/sub with optional `_ws/{channel}.rex` transforms (the live cursors demo at `/tour/cursors`), working on Vercel via a patched runtime crate — see below
 
 ## Architecture
 
@@ -33,12 +33,18 @@ inbound messages optionally run through a compiled `_ws/{channel}.rex` transform
 published to every subscriber (the `/tour/cursors` demo mirrors cursor positions this way).
 
 Vercel's WebSocket support uses a **detached-upgrade** model (the function writes the `101`, the
-platform then tunnels the socket), but the official `vercel_runtime` crate serves connections
-*without* hyper's `.with_upgrades()`, so the handshake can never complete. To unblock this we vendor a
-small fork of the crate at [`crates/vercel_runtime/`](crates/vercel_runtime/) that adds
-`.with_upgrades()` plus a `101` passthrough — two edits, documented in
-[`crates/vercel_runtime/FORK.md`](crates/vercel_runtime/FORK.md). The `@vercel/rust` builder is
-unchanged; it compiles whatever runtime crate the binary links.
+platform then tunnels the socket), but stock `vercel_runtime` serves connections *without* hyper's
+`.with_upgrades()`, so the handshake can never complete. The fix is two edits — `.with_upgrades()`
+plus a `101` passthrough — submitted upstream as
+[vercel/vercel#16708](https://github.com/vercel/vercel/pull/16708). Until that lands on crates.io,
+`Cargo.toml` depends on the PR branch directly:
+
+```toml
+vercel_runtime = { git = "https://github.com/vercel/vercel", branch = "rust-websocket-upgrades", features = ["axum"] }
+```
+
+Once `vercel_runtime` 2.3.0 is published, switch back to `version = "2.3"`. The `@vercel/rust` builder
+is unchanged; it compiles whatever runtime crate the binary links.
 
 > **Caveat — single instance.** The pub/sub broadcast is in-process, so only clients sharing one
 > running instance see each other's messages. On Vercel Fluid that's typically one warm instance, but
@@ -57,7 +63,6 @@ routes/             # Rex handler scripts (filesystem-routed)
   health.rex        # JSON health check
   tour/             # Guided tour pages (includes the cursors WS demo)
   api/              # JSON API endpoints
-crates/vercel_runtime/  # Vendored fork of vercel_runtime w/ WebSocket upgrades (see FORK.md)
 rex-serve.rexd      # Domain type interface (opcodes, types, externs)
 rex-serve.toml      # Server configuration
 rex/                # Git submodule → github.com/creationix/rex (rusty branch)

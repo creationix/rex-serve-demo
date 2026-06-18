@@ -12,8 +12,10 @@ rex-serve = { path = "rex/crates/rex-serve", package = "rex-serve" }
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
 tower = "0.5"
-# Forked vercel_runtime with WebSocket upgrade support — see crates/vercel_runtime/FORK.md
-vercel_runtime = { path = "crates/vercel_runtime", features = ["axum"] }
+# vercel_runtime with WebSocket upgrade support, from the upstream PR
+# (vercel/vercel#16708). Switch to the published `version = "2.3"` once it
+# lands on crates.io.
+vercel_runtime = { git = "https://github.com/vercel/vercel", branch = "rust-websocket-upgrades", features = ["axum"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 include_dir = "0.7"
