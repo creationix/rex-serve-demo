@@ -13,6 +13,7 @@ This is the knowledge-base example from the Rex project, deployed as a Vercel se
 - **External API proxying** — `http.fetch` calls the Deseret Alphabet translator API
 - **Unicode support** — Deseret script characters (U+10400–U+1044F, 4-byte UTF-8)
 - **Type checking** — all routes are type-checked at build time via `.rexd` domain schema
+- **WebSockets** — `/__ws/{channel}` pub/sub with optional `_ws/{channel}.rex` transforms (the live cursors demo at `/tour/cursors`), working on Vercel via a forked runtime — see below
 
 ## Architecture
 
@@ -25,6 +26,25 @@ A single Vercel serverless function (`api/rex.rs`) handles all routes:
 
 The Rex compiler and server library are pulled in via a git submodule pointing to the `rusty` branch of the [rex repo](https://github.com/creationix/rex).
 
+### WebSockets on Vercel
+
+The `/__ws/{channel}` endpoint upgrades to a WebSocket and joins an in-process pub/sub channel;
+inbound messages optionally run through a compiled `_ws/{channel}.rex` transform before being
+published to every subscriber (the `/tour/cursors` demo mirrors cursor positions this way).
+
+Vercel's WebSocket support uses a **detached-upgrade** model (the function writes the `101`, the
+platform then tunnels the socket), but the official `vercel_runtime` crate serves connections
+*without* hyper's `.with_upgrades()`, so the handshake can never complete. To unblock this we vendor a
+small fork of the crate at [`crates/vercel_runtime/`](crates/vercel_runtime/) that adds
+`.with_upgrades()` plus a `101` passthrough — two edits, documented in
+[`crates/vercel_runtime/FORK.md`](crates/vercel_runtime/FORK.md). The `@vercel/rust` builder is
+unchanged; it compiles whatever runtime crate the binary links.
+
+> **Caveat — single instance.** The pub/sub broadcast is in-process, so only clients sharing one
+> running instance see each other's messages. On Vercel Fluid that's typically one warm instance, but
+> under scale-out, clients on different instances won't be connected. Cross-instance fan-out would need
+> an external pub/sub (e.g. Redis/Upstash or Vercel KV) — future work.
+
 ## Project Structure
 
 ```
@@ -32,10 +52,12 @@ api/rex.rs          # Vercel function entry point
 routes/             # Rex handler scripts (filesystem-routed)
   _middleware.rex   # Global middleware (security headers, view-source)
   _layouts/         # HTML templates
+  _ws/              # WebSocket channel transforms (e.g. cursors.rex)
   index.rex         # Homepage
   health.rex        # JSON health check
-  tour/             # Guided tour pages
+  tour/             # Guided tour pages (includes the cursors WS demo)
   api/              # JSON API endpoints
+crates/vercel_runtime/  # Vendored fork of vercel_runtime w/ WebSocket upgrades (see FORK.md)
 rex-serve.rexd      # Domain type interface (opcodes, types, externs)
 rex-serve.toml      # Server configuration
 rex/                # Git submodule → github.com/creationix/rex (rusty branch)

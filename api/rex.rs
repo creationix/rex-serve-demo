@@ -63,6 +63,7 @@ async fn main() -> Result<(), Error> {
     let state = get_state();
 
     let router = Router::new()
+        .merge(rex_serve::ws::router())
         .fallback(rex_serve::handler::handle_request)
         .with_state(state);
 

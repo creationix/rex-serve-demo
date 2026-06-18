@@ -3,3 +3,4 @@ Cargo.lock
 .vercel/
 data.db
 .vercel
+.env*

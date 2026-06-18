@@ -55,7 +55,8 @@ cursor-script = `<script>
   var ws, reconnectTimer;
 
   function connect() {
-    ws = new WebSocket('ws://' + location.host + '/__ws/cursors');
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    ws = new WebSocket(proto + location.host + '/__ws/cursors');
     ws.onopen = function() { status.textContent = 'Connected — move your mouse'; };
     ws.onclose = function() {
       status.textContent = 'Disconnected — reconnecting...';
