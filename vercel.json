@@ -3,7 +3,7 @@
   "framework": null,
   "functions": {
     "api/rex.rs": {
-      "runtime": "vercel-rust@4.0.11",
+      "runtime": "@vercel/rust@1.3.0",
       "maxDuration": 30,
       "includeFiles": ""
     }
