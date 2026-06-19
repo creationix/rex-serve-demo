@@ -1,0 +1,19 @@
+# Build artifacts (host-built; never copy into the Linux build)
+**/target
+
+# Stray local deps / tooling
+node_modules
+package*.json
+.npmrc
+
+# VCS, Vercel, vendored leftovers
+.git
+.vercel
+crates
+
+# Local runtime data and logs
+*.db
+*.log
+
+# Editor / OS cruft
+.DS_Store

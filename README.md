@@ -134,3 +134,21 @@ locally. Notes baked into the script: the Sandbox base image is **Amazon Linux 2
 or Rust by default), and `.gitmodules` uses an SSH URL, so it rewrites SSH→HTTPS
 (`git config url."https://github.com/".insteadOf "git@github.com:"`) before fetching the `rex`
 submodule.
+
+## Run as a container (Docker)
+
+The [`Dockerfile`](Dockerfile) is a multi-stage build of the standalone `rex-serve` server: a Rust
+build stage compiles the binary, and a slim Debian runtime stage runs it. Because the server uses
+native `axum::serve`, WebSockets work in the container — so this image runs the Rex app (HTTP **and**
+the `/__ws/{channel}` pub/sub demo) on any container host (Cloud Run, Fly, Kubernetes, a Vercel
+Sandbox, …); no `vercel_runtime` involved.
+
+```sh
+git submodule update --init --recursive   # the build copies the rex submodule
+docker build -t rex-serve .
+docker run --rm -p 3000:3000 rex-serve
+```
+
+Then visit http://localhost:3000 (and `ws://localhost:3000/__ws/cursors`). The resulting image is
+~115 MB; `data.db` is created inside the container at runtime — mount a volume at `/app/data.db` to
+persist it.
