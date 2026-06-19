@@ -111,3 +111,26 @@ cargo run -p rex-serve -- --dir ../. --port 4000
 ```
 
 Then visit http://localhost:4000.
+
+## Testing in a Vercel Sandbox
+
+As an alternative to the serverless function, the standalone `rex-serve` dev server can run
+in a [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) — a real Linux microVM. Because
+it serves via native `axum::serve` (which handles WebSocket upgrades itself), it runs there
+unmodified: **no `vercel_runtime` needed**, and WebSockets work through the Sandbox's
+`*.vercel.run` ingress.
+
+```sh
+scripts/sandbox-test.sh
+```
+
+The script creates a sandbox, installs Rust + a C toolchain, clones this repo, builds
+`rex-serve`, runs it, and verifies HTTP **and** a two-client WebSocket round-trip through the
+public URL — then removes the sandbox. Overrides via env: `REF` (branch/tag), `VCPUS`,
+`TIMEOUT`, `KEEP=1` (leave it running to poke at).
+
+Prerequisites: a recent Vercel CLI with `vercel sandbox` (logged in, project linked) and Node 21+
+locally. Notes baked into the script: the Sandbox base image is **Amazon Linux 2023** (no compiler
+or Rust by default), and `.gitmodules` uses an SSH URL, so it rewrites SSH→HTTPS
+(`git config url."https://github.com/".insteadOf "git@github.com:"`) before fetching the `rex`
+submodule.
