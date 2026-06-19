@@ -112,36 +112,13 @@ cargo run -p rex-serve -- --dir ../. --port 4000
 
 Then visit http://localhost:4000.
 
-## Testing in a Vercel Sandbox
-
-As an alternative to the serverless function, the standalone `rex-serve` dev server can run
-in a [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) — a real Linux microVM. Because
-it serves via native `axum::serve` (which handles WebSocket upgrades itself), it runs there
-unmodified: **no `vercel_runtime` needed**, and WebSockets work through the Sandbox's
-`*.vercel.run` ingress.
-
-```sh
-scripts/sandbox-test.sh
-```
-
-The script creates a sandbox, installs Rust + a C toolchain, clones this repo, builds
-`rex-serve`, runs it, and verifies HTTP **and** a two-client WebSocket round-trip through the
-public URL — then removes the sandbox. Overrides via env: `REF` (branch/tag), `VCPUS`,
-`TIMEOUT`, `KEEP=1` (leave it running to poke at).
-
-Prerequisites: a recent Vercel CLI with `vercel sandbox` (logged in, project linked) and Node 21+
-locally. Notes baked into the script: the Sandbox base image is **Amazon Linux 2023** (no compiler
-or Rust by default), and `.gitmodules` uses an SSH URL, so it rewrites SSH→HTTPS
-(`git config url."https://github.com/".insteadOf "git@github.com:"`) before fetching the `rex`
-submodule.
-
 ## Run as a container (Docker)
 
-The [`Dockerfile`](Dockerfile) is a multi-stage build of the standalone `rex-serve` server: a Rust
-build stage compiles the binary, and a slim Debian runtime stage runs it. Because the server uses
-native `axum::serve`, WebSockets work in the container — so this image runs the Rex app (HTTP **and**
-the `/__ws/{channel}` pub/sub demo) on any container host (Cloud Run, Fly, Kubernetes, a Vercel
-Sandbox, …); no `vercel_runtime` involved.
+The [`Dockerfile`](Dockerfile) is a multi-stage **Alpine/musl** build: a `rust:alpine` stage compiles
+a fully static `rex-serve` binary, and a minimal `alpine` runtime stage runs it. Because the server
+uses native `axum::serve`, WebSockets work in the container — so this image runs the Rex app (HTTP
+**and** the `/__ws/{channel}` pub/sub demo) on any container host (Cloud Run, Fly, Kubernetes, a
+Vercel Sandbox, …); no `vercel_runtime` involved.
 
 ```sh
 git submodule update --init --recursive   # the build copies the rex submodule
@@ -149,6 +126,24 @@ docker build -t rex-serve .
 docker run --rm -p 3000:3000 rex-serve
 ```
 
-Then visit http://localhost:3000 (and `ws://localhost:3000/__ws/cursors`). The resulting image is
-~115 MB; `data.db` is created inside the container at runtime — mount a volume at `/app/data.db` to
-persist it.
+Then visit http://localhost:3000 (and `ws://localhost:3000/__ws/cursors`). The image is ~20 MB (a
+static musl binary on Alpine); `data.db` is created inside the container at runtime — mount a volume
+at `/app/data.db` to persist it.
+
+## Testing in a Vercel Sandbox
+
+The standalone server can also run in a [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) — a
+real Linux microVM — and WebSockets work through its `*.vercel.run` ingress.
+
+```sh
+scripts/sandbox-run.sh
+```
+
+The script builds the static `x86_64` musl binary on the host with Docker (via the
+[`Dockerfile`](Dockerfile) above), uploads just that ~10 MB binary plus the project files to a fresh
+sandbox, runs it, and verifies HTTP **and** a two-client WebSocket round-trip through the public URL
+— then removes the sandbox. Because the binary is static, the sandbox needs no Rust toolchain,
+compiler, or Docker, so it's serving in seconds. Env overrides: `TIMEOUT`, `KEEP=1` (leave it running
+to poke at).
+
+Prerequisites: Docker, a Vercel CLI with `vercel sandbox` (logged in, project linked), and Node 21+.

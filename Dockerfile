@@ -8,6 +8,10 @@
 # (Cloud Run, Fly, Kubernetes, a Vercel Sandbox, …). No `vercel_runtime` needed;
 # that's only for the serverless function entry point (api/rex.rs).
 #
+# Because the build produces a fully static musl binary, the same Dockerfile
+# also serves `scripts/sandbox-run.sh`, which extracts the binary and uploads it
+# to a Vercel Sandbox (no toolchain or Docker needed in the sandbox).
+#
 # Build (from the repo root, with submodules checked out):
 #   git submodule update --init --recursive
 #   docker build -t rex-serve .
@@ -16,13 +20,13 @@
 #   # then: http://localhost:3000  and  ws://localhost:3000/__ws/cursors
 
 # ---- build stage --------------------------------------------------------------
-# rust:1-alpine targets musl natively, so `cargo build` yields a statically
+# rust:alpine targets musl natively, so `cargo build` yields a statically
 # linked musl binary. The toolchain it ships is minimal, so add what the C/asm
 # deps need: musl-dev + gcc for rusqlite's bundled SQLite, and make + perl for
 # ring's (rustls) build scripts. TLS is rustls/ring — no OpenSSL, no cmake.
-FROM rust:1-alpine AS build
+FROM rust:alpine AS build
 WORKDIR /src
-RUN apk add --no-cache musl-dev gcc make perl
+RUN apk add --no-cache build-base perl
 
 # Build the standalone server from the rex submodule workspace. Building
 # `-p rex-serve` against rex/Cargo.toml avoids the demo crate, which has a git
@@ -32,7 +36,7 @@ RUN cargo build --release -p rex-serve --manifest-path rex/Cargo.toml \
  && strip rex/target/release/rex-serve
 
 # ---- runtime stage ------------------------------------------------------------
-FROM alpine:3.22 AS runtime
+FROM alpine:3.20 AS runtime
 # ca-certificates lets http.fetch reach external HTTPS APIs (e.g. the Deseret demo).
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
