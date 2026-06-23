@@ -49,7 +49,7 @@ cursor-script = `<script>
   var COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9ff3','#54a0ff','#5f27cd','#01a3a4'];
   var myId = Math.random().toString(36).slice(2, 8);
   var myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-  var cursors = {};
+    var cursors = Object.create(null);
   var area = document.getElementById('cursor-area');
   var status = document.getElementById('status');
   var ws, reconnectTimer;
@@ -74,12 +74,41 @@ cursor-script = `<script>
   }
 
   function updateCursor(id, x, y, color, name) {
+    if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) return;
+    if (typeof x !== 'number' || !Number.isFinite(x)) return;
+    if (typeof y !== 'number' || !Number.isFinite(y)) return;
+
+    x = Math.max(0, Math.min(1, x));
+    y = Math.max(0, Math.min(1, y));
+    color = typeof color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(color)
+      ? color
+      : '#4d96ff';
+    var label = typeof name === 'string' ? name.slice(0, 32) : id;
+
     var el = cursors[id];
     if (!el) {
       el = document.createElement('div');
       el.style.cssText = 'position:absolute;pointer-events:none;transition:left 0.05s,top 0.05s;z-index:10';
-      el.innerHTML = '<svg width="16" height="20" viewBox="0 0 16 20"><path d="M0 0l16 12h-9l-3 8z" fill="' + color + '" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/></svg>'
-        + '<span style="position:absolute;left:16px;top:12px;font-size:11px;color:' + color + ';white-space:nowrap;font-weight:600">' + (name || id) + '</span>';
+
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '16');
+      svg.setAttribute('height', '20');
+      svg.setAttribute('viewBox', '0 0 16 20');
+
+      var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      arrow.setAttribute('d', 'M0 0l16 12h-9l-3 8z');
+      arrow.setAttribute('fill', color);
+      arrow.setAttribute('stroke', 'rgba(0,0,0,0.3)');
+      arrow.setAttribute('stroke-width', '0.5');
+      svg.appendChild(arrow);
+
+      var labelEl = document.createElement('span');
+      labelEl.style.cssText = 'position:absolute;left:16px;top:12px;font-size:11px;white-space:nowrap;font-weight:600';
+      labelEl.style.color = color;
+      labelEl.textContent = label;
+
+      el.appendChild(svg);
+      el.appendChild(labelEl);
       area.appendChild(el);
       cursors[id] = el;
     }
