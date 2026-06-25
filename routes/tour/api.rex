@@ -18,6 +18,9 @@ api-snippet = "when method == \"GET\" do
   {ok: true, articles: items}
 end"
 
+/* Build example URLs against the host actually serving this page. */
+base = (headers.x-forwarded-proto or "http") + "://" + (headers.host or "localhost:4000")
+
 body = html`<h1>Tour: JSON API</h1>
 <p class="source-link"><a href="/tour/experience">Next: DX Report &rarr;</a></p>
 
@@ -49,8 +52,8 @@ vercel env add REX_SECRET_API_KEY</pre>
 
 <details class="try-it">
 <summary>Step 2: Create an article</summary>
-<pre>curl -X POST http://localhost:4000/api/articles \
-  -H 'Authorization: demo' \
+<pre>curl -X POST ${base}/api/articles \
+  -H 'Authorization: $REX_SECRET_API_KEY' \
   -d '{"slug":"hello","title":"Hello World","body":"# Hello
 
 Created via API."}'</pre>
@@ -58,12 +61,12 @@ Created via API."}'</pre>
 
 <details class="try-it">
 <summary>Step 3: List articles</summary>
-<pre>curl http://localhost:4000/api/articles -H 'Authorization: demo'</pre>
+<pre>curl ${base}/api/articles -H 'Authorization: $REX_SECRET_API_KEY'</pre>
 </details>
 
 <details class="try-it">
 <summary>Step 4: Try without auth (expect 401)</summary>
-<pre>curl http://localhost:4000/api/articles</pre>
+<pre>curl ${base}/api/articles</pre>
 </details>
 
 <h2>How It Works</h2>

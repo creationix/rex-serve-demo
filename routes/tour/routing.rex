@@ -17,6 +17,9 @@ when method == \"POST\" do
   /* create resource */
 end"
 
+/* Build example URLs against the host actually serving this page. */
+base = (headers.x-forwarded-proto or "http") + "://" + (headers.host or "localhost:4000")
+
 body = html`<h1>Tour: Filesystem Routing</h1>
 <p class="source-link"><a href="/tour/middleware">Next: Middleware &rarr;</a></p>
 
@@ -54,7 +57,7 @@ The value is available as <code>params.param</code> inside the handler.</p>
 <h2>Try It</h2>
 <details class="try-it">
 <summary>Try: View the article API with a dynamic slug</summary>
-<pre>curl http://localhost:4000/api/articles/test-slug -H "Authorization: $REX_SECRET_API_KEY"</pre>
+<pre>curl ${base}/api/articles/test-slug -H "Authorization: $REX_SECRET_API_KEY"</pre>
 <p>The <code>[slug].rex</code> handler receives <code>params.slug = "test-slug"</code>.</p>
 </details>
 

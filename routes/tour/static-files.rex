@@ -10,6 +10,9 @@ end
 self-source = fs.read("routes/tour/static-files.rex")
 highlighted = when self-source do html.raw(html.highlight(self-source)) end
 
+/* Build example URLs against the host actually serving this page. */
+base = (headers.x-forwarded-proto or "http") + "://" + (headers.host or "localhost:4000")
+
 body = html`<h1>Tour: Static Files</h1>
 <p class="source-link"><a href="/tour/routing">Next: Routing &rarr;</a></p>
 
@@ -39,7 +42,7 @@ gets the <code>X-Request-Id</code> and <code>X-Content-Type-Options: nosniff</co
 added by the global middleware. Try it:</p>
 <details class="try-it">
 <summary>Try it: inspect static file headers</summary>
-<pre>curl -I http://localhost:4000/style.css</pre>
+<pre>curl -I ${base}/style.css</pre>
 <p>You'll see the security headers alongside the CSS content-type.</p>
 </details>
 

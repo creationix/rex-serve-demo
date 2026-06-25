@@ -8,6 +8,9 @@ end
 self-source = fs.read("routes/index.rex")
 highlighted = when self-source do html.raw(html.highlight(self-source)) end
 
+/* Build example URLs against the host actually serving this page. */
+base = (headers.x-forwarded-proto or "http") + "://" + (headers.host or "localhost:4000")
+
 body = html`<h1>Welcome to rex-serve</h1>
 <p>This is a live, self-documenting demo of <strong>rex-serve</strong> — an HTTP server
 that uses <a href="https://github.com/creationix/rex">Rex</a> scripts as edge functions.
@@ -16,7 +19,7 @@ to understand each feature.</p>
 
 <p style="color:var(--muted);font-size:0.9rem">Tip: add the header <code>X-View-Source: 1</code> to any
 request to see the raw Rex source that generated it.
-Try <code>curl -H 'X-View-Source: 1' http://localhost:4000/</code></p>
+Try <code>curl -H 'X-View-Source: 1' ${base}/</code></p>
 
 <hr>
 <h2>Guided Tour</h2>

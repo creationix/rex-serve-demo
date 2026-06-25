@@ -19,6 +19,9 @@ auth-snippet = "unless api-key do
   {ok: false, error: \"unauthorized\"}
 end"
 
+/* Build example URLs against the host actually serving this page. */
+base = (headers.x-forwarded-proto or "http") + "://" + (headers.host or "localhost:4000")
+
 body = html`<h1>Tour: Middleware</h1>
 <p class="source-link"><a href="/tour/templates">Next: Templates &rarr;</a></p>
 
@@ -38,7 +41,7 @@ added by the global middleware.</p>
 <p>If middleware sets <code>res.status</code> to 400+, the chain stops and the handler never runs.
 This is how auth works:</p>
 <pre>${html.raw(html.highlight(auth-snippet))}</pre>
-<p>Try hitting the API without credentials: <code>curl http://localhost:4000/api/articles</code></p>
+<p>Try hitting the API without credentials: <code>curl ${base}/api/articles</code></p>
 
 <h2>Data Passing</h2>
 <p>Variables set by middleware persist into the handler. The API middleware sets
@@ -49,7 +52,7 @@ This is how auth works:</p>
 <code>X-View-Source: 1</code> to any request to see the Rex source:</p>
 <details class="try-it">
 <summary>Try: View source for this page</summary>
-<pre>curl -H 'X-View-Source: 1' http://localhost:4000/tour/middleware</pre>
+<pre>curl -H 'X-View-Source: 1' ${base}/tour/middleware</pre>
 </details>
 
 <h2>Global Middleware Source</h2>
