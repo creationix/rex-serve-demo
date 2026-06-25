@@ -74,7 +74,7 @@ Return an object literal and the server serializes it:</p>
 
 <h2>Database</h2>
 <p>The <code>db.*</code> opcodes provide a simple key-value store. This deployment uses
-Upstash Redis when <code>UPSTASH_REDIS_REST_URL</code> and <code>UPSTASH_REDIS_REST_TOKEN</code>
+Upstash Redis when <code>KV_REST_API_URL</code> and <code>KV_REST_API_TOKEN</code>
 are configured; local development falls back to SQLite automatically.</p>
 <ul>
 <li><code>db.get(key)</code> — returns the value or <code>none</code></li>

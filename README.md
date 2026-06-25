@@ -87,8 +87,9 @@ vercel deploy
 ### Configure durable storage
 
 Install the [Upstash Redis integration](https://vercel.com/marketplace/upstash) on the Vercel
-project and select its Free plan. The integration injects `UPSTASH_REDIS_REST_URL` and
-`UPSTASH_REDIS_REST_TOKEN`; `rex-serve` detects them automatically because this project's
+project and select its Free plan. The integration injects `KV_REST_API_URL` and
+`KV_REST_API_TOKEN` (rex-serve also accepts the Upstash-native `UPSTASH_REDIS_REST_URL` /
+`UPSTASH_REDIS_REST_TOKEN`); it detects them automatically because this project's
 `db.backend` is `"auto"`. Redeploy after connecting the database.
 
 Without those variables, `db.*` falls back to the local SQLite file configured in
