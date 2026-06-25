@@ -54,7 +54,7 @@ The value is available as <code>params.param</code> inside the handler.</p>
 <h2>Try It</h2>
 <details class="try-it">
 <summary>Try: View the article API with a dynamic slug</summary>
-<pre>curl http://localhost:4000/api/articles/test-slug -H 'Authorization: demo'</pre>
+<pre>curl http://localhost:4000/api/articles/test-slug -H "Authorization: $REX_SECRET_API_KEY"</pre>
 <p>The <code>[slug].rex</code> handler receives <code>params.slug = "test-slug"</code>.</p>
 </details>
 

@@ -1,22 +1,23 @@
 /* API middleware: key-based authentication.
-   Protects all /api/* routes. A valid key must exist in the database.
-   Seed one with: sqlite3 examples/knowledge-base/data.db "INSERT INTO kv VALUES('keys:demo','1')" */
+   Protects all /api/* routes. Configure REX_SECRET_API_KEY in the environment;
+   rex-serve exposes it to Rex as secrets.api-key. */
 
 api-key = headers.authorization
+expected-key = secrets.api-key
+
+unless expected-key do
+  res.status = 503
+  return { ok: false error: "api_key_not_configured" }
+end
 
 unless api-key do
   res.status = 401
-  return { ok: false error: "missing_api_key" hint: "Add Authorization header. Seed a key: sqlite3 data.db \"INSERT INTO kv VALUES('keys:demo','1')\"" }
+  return { ok: false error: "missing_api_key" hint: "Add the configured key in the Authorization header" }
 end
 
-key-valid = db.get("keys:" + api-key)
-
-unless key-valid do
-  key-valid
+unless api-key == expected-key do
   res.status = 401
   return { ok: false error: "invalid_api_key" }
 end
-key-valid
 
-/* Authenticated identity — available to downstream handlers */
-log.info(`authenticated: ${api-key}`)
+log.info("authenticated API request")

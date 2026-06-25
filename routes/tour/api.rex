@@ -39,8 +39,12 @@ you a complete CRUD API in a few lines of Rex.</p>
 
 <h2>Try It</h2>
 <details class="try-it">
-<summary>Step 1: Seed an API key</summary>
-<pre>sqlite3 examples/knowledge-base/data.db "INSERT INTO kv VALUES('keys:demo','1')"</pre>
+<summary>Step 1: Configure an API key</summary>
+<pre># Set this before starting rex-serve locally:
+export REX_SECRET_API_KEY=demo
+
+# On Vercel, add REX_SECRET_API_KEY in Project Settings or with:
+vercel env add REX_SECRET_API_KEY</pre>
 </details>
 
 <details class="try-it">
@@ -69,8 +73,9 @@ Return an object literal and the server serializes it:</p>
 <pre>${html.raw(html.highlight(api-snippet))}</pre>
 
 <h2>Database</h2>
-<p>The <code>db.*</code> opcodes provide a simple key-value store backed by SQLite.
-The database file is created automatically on first run.</p>
+<p>The <code>db.*</code> opcodes provide a simple key-value store. This deployment uses
+Upstash Redis when <code>UPSTASH_REDIS_REST_URL</code> and <code>UPSTASH_REDIS_REST_TOKEN</code>
+are configured; local development falls back to SQLite automatically.</p>
 <ul>
 <li><code>db.get(key)</code> — returns the value or <code>none</code></li>
 <li><code>db.set(key, value)</code> — upserts a string value</li>

@@ -9,11 +9,11 @@ This is the knowledge-base example from the Rex project, deployed as a Vercel se
 - **Filesystem-routed Rex scripts** — `.rex` files as server-side handlers
 - **Middleware chains** — `_middleware.rex` files that run before handlers
 - **Tagged template literals** — the `html` tag auto-escapes interpolated values
-- **JSON API with CRUD** — backed by SQLite KV store
+- **JSON API with CRUD** — backed by Upstash Redis on Vercel and SQLite locally
 - **External API proxying** — `http.fetch` calls the Deseret Alphabet translator API
 - **Unicode support** — Deseret script characters (U+10400–U+1044F, 4-byte UTF-8)
 - **Type checking** — all routes are type-checked at build time via `.rexd` domain schema
-- **WebSockets** — `/__ws/{channel}` pub/sub with optional `_ws/{channel}.rex` transforms (the live cursors demo at `/tour/cursors`), working on Vercel via a patched runtime crate — see below
+- **WebSockets** — `/__ws/{channel}` pub/sub with optional `_ws/{channel}.rex` transforms (the live cursors demo at `/tour/cursors`)
 
 ## Architecture
 
@@ -23,6 +23,7 @@ A single Vercel serverless function (`api/rex.rs`) handles all routes:
 2. Each request is routed through the Rex middleware chain and matched handler
 3. The Rex interpreter runs on `spawn_blocking` so the async event loop stays free
 4. `http.fetch` uses async reqwest bridged via `Handle::block_on`
+5. `db.*` uses Upstash's REST API when its Vercel environment variables are present, otherwise SQLite
 
 The Rex compiler and server library are pulled in via a git submodule pointing to the `rusty` branch of the [rex repo](https://github.com/creationix/rex).
 
@@ -32,19 +33,9 @@ The `/__ws/{channel}` endpoint upgrades to a WebSocket and joins an in-process p
 inbound messages optionally run through a compiled `_ws/{channel}.rex` transform before being
 published to every subscriber (the `/tour/cursors` demo mirrors cursor positions this way).
 
-Vercel's WebSocket support uses a **detached-upgrade** model (the function writes the `101`, the
-platform then tunnels the socket), but stock `vercel_runtime` serves connections *without* hyper's
-`.with_upgrades()`, so the handshake can never complete. The fix is two edits — `.with_upgrades()`
-plus a `101` passthrough — submitted upstream as
-[vercel/vercel#16708](https://github.com/vercel/vercel/pull/16708). Until that lands on crates.io,
-`Cargo.toml` depends on the PR branch directly:
-
-```toml
-vercel_runtime = { git = "https://github.com/vercel/vercel", branch = "rust-websocket-upgrades", features = ["axum"] }
-```
-
-Once `vercel_runtime` 2.3.0 is published, switch back to `version = "2.3"`. The `@vercel/rust` builder
-is unchanged; it compiles whatever runtime crate the binary links.
+Vercel's WebSocket support uses a **detached-upgrade** model: the function writes the `101`, then the
+platform tunnels the socket. WebSocket upgrades are supported by `vercel_runtime` 2.3 and later via
+[vercel/vercel#16708](https://github.com/vercel/vercel/pull/16708).
 
 > **Caveat — single instance.** The pub/sub broadcast is in-process, so only clients sharing one
 > running instance see each other's messages. On Vercel Fluid that's typically one warm instance, but
@@ -86,9 +77,23 @@ cd rex-serve-demo
 # Link to your Vercel project
 vercel link
 
+# Add the API secret (use the same value in the Authorization header)
+vercel env add REX_SECRET_API_KEY
+
 # Deploy
 vercel deploy
 ```
+
+### Configure durable storage
+
+Install the [Upstash Redis integration](https://vercel.com/marketplace/upstash) on the Vercel
+project and select its Free plan. The integration injects `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN`; `rex-serve` detects them automatically because this project's
+`db.backend` is `"auto"`. Redeploy after connecting the database.
+
+Without those variables, `db.*` falls back to the local SQLite file configured in
+`rex-serve.toml`. A partial Upstash configuration fails startup instead of silently using
+ephemeral storage.
 
 ### Updating the Rex submodule
 
@@ -107,7 +112,7 @@ Run the standalone rex-serve binary (no Vercel required):
 
 ```sh
 cd rex
-cargo run -p rex-serve -- --dir ../. --port 4000
+REX_SECRET_API_KEY=demo cargo run -p rex-serve -- --dir ../. --port 4000
 ```
 
 Then visit http://localhost:4000.
@@ -123,7 +128,7 @@ Vercel Sandbox, …); no `vercel_runtime` involved.
 ```sh
 git submodule update --init --recursive   # the build copies the rex submodule
 docker build -t rex-serve .
-docker run --rm -p 3000:3000 rex-serve
+docker run --rm -p 3000:3000 -e REX_SECRET_API_KEY=demo rex-serve
 ```
 
 Then visit http://localhost:3000 (and `ws://localhost:3000/__ws/cursors`). The image is ~20 MB (a

@@ -7,4 +7,5 @@ gas_limit = 1_000_000
 dir = "routes"
 
 [db]
+backend = "auto"
 path = "data.db"
