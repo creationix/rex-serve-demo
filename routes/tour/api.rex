@@ -53,7 +53,7 @@ vercel env add REX_SECRET_API_KEY</pre>
 <details class="try-it">
 <summary>Step 2: Create an article</summary>
 <pre>curl -X POST ${base}/api/articles \
-  -H 'Authorization: $REX_SECRET_API_KEY' \
+  -H "Authorization: $REX_SECRET_API_KEY" \
   -d '{"slug":"hello","title":"Hello World","body":"# Hello
 
 Created via API."}'</pre>
@@ -61,7 +61,7 @@ Created via API."}'</pre>
 
 <details class="try-it">
 <summary>Step 3: List articles</summary>
-<pre>curl ${base}/api/articles -H 'Authorization: $REX_SECRET_API_KEY'</pre>
+<pre>curl ${base}/api/articles -H "Authorization: $REX_SECRET_API_KEY"</pre>
 </details>
 
 <details class="try-it">
