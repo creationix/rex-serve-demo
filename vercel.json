@@ -14,11 +14,7 @@
       "headers": [
         {
           "key": "Server-Timing",
-          "value": "test;dur=1"
-        },
-        {
-          "key": "x-Server-Timing",
-          "value": "test;dur=2"
+          "value": "test-from-vercel-json;dur=1"
         }
       ]
     }
